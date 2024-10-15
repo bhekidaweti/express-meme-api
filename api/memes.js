@@ -1,17 +1,24 @@
+const express = require("express");
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-module.exports = async (req, res) => {
-    const mainUrl = `https://reddit.com/r/memes`;
+const router = express.Router(); 
+const mainUrl = `https://reddit.com/r/memes`;
 
+router.get("/memes", async (req, res) => {
     try {
-        const response = await axios.get(mainUrl);
+        const response = await axios.get(mainUrl, {
+            headers: {
+                "User-Agent": "Mozilla/5.0", 
+            },
+        });
         const memes = extractMemes(response.data);
-        res.status(200).json(memes);
+        res.json(memes);
     } catch (error) {
-        res.status(500).json({ error: "Error fetching memes" });
+        console.error(error);
+        res.status(500).json({ error: "Error fetching memes", details: error.message });
     }
-};
+});
 
 const extractMemes = (html) => {
     const $ = cheerio.load(html);
@@ -19,7 +26,11 @@ const extractMemes = (html) => {
     const memeUrls = [];
     memeImages.each((_, element) => {
         const memeUrl = $(element).attr("src");
-        memeUrls.push(memeUrl);
+        if (memeUrl) {
+            memeUrls.push(memeUrl);
+        }
     });
     return memeUrls;
 };
+
+module.exports = router; 
